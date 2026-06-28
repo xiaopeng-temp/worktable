@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>短视频创作文案工作台</title>
+<style>
+  :root {
+    --bg: #f5f0eb;
+    --card: #ffffff;
+    --sub-bg: #fafaf7;
+    --text: #2d2d2d;
+    --muted: #8c8c8c;
+    --accent: #ff6b35;
+    --accent-hover: #e55a2b;
+    --border: #e0d8cf;
+    --theme-accent: #e07b4b;
+    --danger: #e74c3c;
+    --danger-hover: #c0392b;
+    --shadow: 0 2px 8px rgba(0,0,0,0.06);
+    --shadow-hover: 0 4px 16px rgba(0,0,0,0.10);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── App Container ── */
+  .app {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    padding: 28px 0 20px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 24px;
+  }
+  header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    color: #1a1a1a;
+  }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+  .toolbar button {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .toolbar button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: #fff8f5;
+  }
+  .toolbar button.danger-btn:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+    background: #fff5f5;
+  }
+
+  /* ── Theme List ── */
+  .theme-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-height: 60px;
+  }
+
+  /* ── Theme Card (主题模块) ── */
+  .theme-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--theme-accent);
+    position: relative;
+    transition: box-shadow 0.25s, transform 0.15s, opacity 0.2s;
+    overflow: hidden;
+  }
+  .theme-card:hover {
+    box-shadow: var(--shadow-hover);
+  }
+  .theme-card.dragging {
+    opacity: 0.45;
+    transform: scale(0.97);
+  }
+  .theme-card.drag-over {
+    box-shadow: 0 0 0 4px rgba(224,123,75,0.18);
+  }
+
+  /* Theme Header */
+  .theme-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #f0ebe0;
+    cursor: default;
+  }
+  .theme-drag-handle {
+    color: #ccc;
+    font-size: 18px;
+    cursor: grab;
+    padding: 4px 2px;
+    user-select: none;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: color 0.2s;
+  }
+  .theme-drag-handle:hover { color: var(--theme-accent); }
+  .theme-drag-handle:active { cursor: grabbing; }
+
+  .theme-index {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--theme-accent);
+    background: #fef5f0;
+    padding: 2px 10px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    min-width: 42px;
+    text-align: center;
+  }
+  .theme-title-input {
+    flex: 1;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 4px 4px;
+    font-size: 17px;
+    font-weight: 700;
+    font-family: inherit;
+    color: var(--text);
+    outline: none;
+    background: transparent;
+    transition: border-color 0.2s;
+    min-width: 0;
+  }
+  .theme-title-input::placeholder { color: #c0b8ad; font-weight: 500; }
+  .theme-title-input:focus { border-bottom-color: var(--theme-accent); }
+
+  .theme-delete-btn {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #c0b8ad;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .theme-delete-btn:hover {
+    background: #fff0ed;
+    color: var(--danger);
+  }
+
+  /* ── Sub-module List (inside theme) ── */
+  .sub-list {
+    padding: 8px 12px 4px;
+  }
+
+  /* ── Sub-module Card (小标题模块) ── */
+  .sub-card {
+    background: var(--sub-bg);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px 10px;
+    margin-bottom: 10px;
+    position: relative;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s, opacity 0.2s;
+  }
+  .sub-card:hover {
+    border-color: #e8e2d5;
+  }
+  .sub-card.dragging {
+    opacity: 0.45;
+    transform: scale(0.97);
+  }
+  .sub-card.drag-over {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(255,107,53,0.10);
+  }
+
+  /* Sub drag handle */
+  .sub-drag-handle {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #d5cec0;
+    font-size: 16px;
+    cursor: grab;
+    padding: 4px 2px;
+    user-select: none;
+    line-height: 1;
+    transition: color 0.2s;
+    z-index: 1;
+  }
+  .sub-drag-handle:hover { color: var(--accent); }
+  .sub-drag-handle:active { cursor: grabbing; }
+
+  /* Sub subtitle input */
+  .sub-subtitle {
+    width: 100%;
+    border: none;
+    border-bottom: 1.5px solid #e8e2d5;
+    padding: 4px 0 4px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text);
+    outline: none;
+    background: transparent;
+    transition: border-color 0.2s;
+    margin-bottom: 6px;
+  }
+  .sub-subtitle::placeholder { color: #c0b8ad; font-weight: 400; font-size: 13px; }
+  .sub-subtitle:focus { border-bottom-color: var(--accent); }
+
+  /* Sub content textarea */
+  .sub-content {
+    width: 100%;
+    border: none;
+    resize: vertical;
+    min-height: 60px;
+    padding: 4px 0 4px 22px;
+    font-size: 14px;
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Serif SC", serif;
+    line-height: 1.8;
+    color: var(--text);
+    outline: none;
+    background: transparent;
+    transition: min-height 0.2s;
+  }
+  .sub-content::placeholder { color: #c0b8ad; }
+  .sub-content:focus { min-height: 100px; }
+
+  /* Sub meta bar */
+  .sub-meta {
+    display: flex;
+    gap: 14px;
+    padding: 4px 0 0 22px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .sub-meta span { display: flex; align-items: center; gap: 3px; }
+
+  /* Sub delete button */
+  .sub-delete-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #c0b8ad;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+    z-index: 1;
+  }
+  .sub-delete-btn:hover {
+    background: #fff0ed;
+    color: var(--danger);
+  }
+
+  /* ── Add Sub Button (inside theme) ── */
+  .add-sub-btn {
+    display: block;
+    width: calc(100% - 24px);
+    margin: 0 12px 12px;
+    padding: 10px;
+    border: 1.5px dashed #d5cec0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .add-sub-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: #fff8f5;
+  }
+
+  /* Theme footer stats */
+  .theme-footer {
+    padding: 0 16px 12px;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Add Theme Button ── */
+  .add-theme-btn {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 16px;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--muted);
+    font-size: 15px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .add-theme-btn:hover {
+    border-color: var(--theme-accent);
+    color: var(--theme-accent);
+    background: #fef9f5;
+  }
+
+  /* ── Footer ── */
+  footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 24px;
+    padding: 16px;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    font-size: 14px;
+    color: var(--muted);
+  }
+  footer strong {
+    color: var(--text);
+    font-size: 16px;
+  }
+  footer .divider { color: var(--border); }
+  .save-status {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: #edf7ed;
+    color: #27ae60;
+    transition: all 0.3s;
+  }
+  .save-status.saving {
+    background: #fff8e1;
+    color: #f39c12;
+  }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-120px);
+    background: #1a1a1a;
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 24px;
+    font-size: 14px;
+    z-index: 999;
+    pointer-events: none;
+    transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── Mobile ── */
+  @media (max-width: 500px) {
+    .app { padding: 12px 10px 40px; }
+    header h1 { font-size: 22px; }
+    .toolbar { gap: 6px; }
+    .toolbar button { padding: 7px 12px; font-size: 12px; }
+    .theme-header { padding: 10px 12px 8px; }
+    .theme-title-input { font-size: 15px; }
+    .sub-list { padding: 6px 8px 2px; }
+    .sub-card { padding: 10px 10px 8px; margin-bottom: 8px; }
+    .sub-subtitle { font-size: 13px; padding-left: 18px; }
+    .sub-content { font-size: 13px; padding-left: 18px; }
+    .sub-meta { padding-left: 18px; font-size: 10px; }
+    .sub-drag-handle { left: 4px; font-size: 14px; }
+    .sub-delete-btn { top: 6px; right: 4px; width: 22px; height: 22px; font-size: 14px; }
+    .add-sub-btn { margin: 0 8px 8px; width: calc(100% - 16px); font-size: 12px; }
+    footer { flex-direction: column; gap: 4px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <header>
+    <h1>🎬 短视频创作文案</h1>
+    <div class="toolbar">
+      <button onclick="applyTemplate('oral')" title="口播观点类脚本结构">📢 口播脚本</button>
+      <button onclick="applyTemplate('product')" title="产品种草/带货类脚本结构">🛍️ 产品种草</button>
+      <button onclick="applyTemplate('story')" title="故事叙述类脚本结构">📖 故事脚本</button>
+      <button onclick="exportText()">📋 复制全文</button>
+      <button class="danger-btn" onclick="clearAll()">🗑️ 清空</button>
+    </div>
+  </header>
+
+  <!-- Theme List -->
+  <div class="theme-list" id="themeList"></div>
+
+  <!-- Add Theme Button -->
+  <button class="add-theme-btn" onclick="addTheme()">＋ 添加主题模块</button>
+
+  <!-- Footer -->
+  <footer>
+    <span>总字数：<strong id="totalChars">0</strong></span>
+    <span class="divider">|</span>
+    <span>预估时长：<strong id="totalDuration">0</strong>秒</span>
+    <span class="divider">|</span>
+    <span>主题：<strong id="totalThemes">0</strong></span>
+    <span class="divider">|</span>
+    <span>小标题：<strong id="totalSubs">0</strong></span>
+    <span class="divider">|</span>
+    <span class="save-status" id="saveStatus">💾 已保存</span>
+  </footer>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  Data Model
+//  themes: [ { id, title, subModules: [ { id, subtitle, content } ] } ]
+// ═══════════════════════════════════════
+
+const STORAGE_KEY = 'short-video-script-state-v2';
+const themeList = document.getElementById('themeList');
+let themes = [];
+let dragMeta = null; // { type:'theme'|'sub', themeIdx, subIdx }
+
+// ═══════════════════════════════════════
+//  Persistence
+// ═══════════════════════════════════════
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      themes = JSON.parse(saved);
+      if (!Array.isArray(themes)) themes = [];
+    }
+  } catch (e) {
+    console.warn('Failed to load:', e);
+    themes = [];
+  }
+
+  // Migrate from v1 (flat modules → nested themes)
+  if (!themes.length) {
+    const v1 = localStorage.getItem('short-video-script-state');
+    if (v1) {
+      try {
+        const flat = JSON.parse(v1);
+        if (Array.isArray(flat) && flat.length > 0 && flat[0].subtitle !== undefined) {
+          // Old flat format detected — wrap in one theme
+          themes = [{
+            id: generateId(),
+            title: '',
+            subModules: flat.map(m => ({
+              id: generateId(),
+              subtitle: m.subtitle || '',
+              content: m.content || ''
+            }))
+          }];
+          localStorage.removeItem('short-video-script-state'); // clear old key
+        }
+      } catch (e) { /* ignore */ }
+    }
+  }
+
+  // If still empty, create one default theme with one blank sub-module
+  if (!themes.length) {
+    themes.push({
+      id: generateId(),
+      title: '',
+      subModules: [{ id: generateId(), subtitle: '', content: '' }]
+    });
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(themes));
+    showSaveStatus('💾 已保存', false);
+  } catch (e) {
+    showSaveStatus('⚠️ 保存失败', false);
+  }
+}
+
+let saveTimer = null;
+function autoSave() {
+  showSaveStatus('🔄 保存中…', true);
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 400);
+}
+
+function showSaveStatus(text, saving) {
+  const el = document.getElementById('saveStatus');
+  el.textContent = text;
+  el.classList.toggle('saving', saving);
+}
+
+function generateId() {
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+// ═══════════════════════════════════════
+//  Rendering
+// ═══════════════════════════════════════
+
+function renderAll() {
+  themeList.innerHTML = '';
+  themes.forEach((theme, ti) => {
+    themeList.appendChild(createThemeCard(theme, ti));
+  });
+  updateStats();
+}
+
+function createThemeCard(theme, ti) {
+  const card = document.createElement('div');
+  card.className = 'theme-card';
+  card.draggable = true;
+  card.dataset.themeIdx = ti;
+
+  // ── Theme Header ──
+  const header = document.createElement('div');
+  header.className = 'theme-header';
+
+  // Theme drag handle
+  const dragHandle = document.createElement('span');
+  dragHandle.className = 'theme-drag-handle';
+  dragHandle.textContent = '⠿';
+  dragHandle.title = '拖拽排序主题';
+  dragHandle.addEventListener('mousedown', e => { card.draggable = true; });
+  header.appendChild(dragHandle);
+
+  // Theme index badge
+  const indexBadge = document.createElement('span');
+  indexBadge.className = 'theme-index';
+  indexBadge.textContent = `主题 ${ti + 1}`;
+  header.appendChild(indexBadge);
+
+  // Theme title input
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.className = 'theme-title-input';
+  titleInput.placeholder = '主题名称（如：产品A种草视频）';
+  titleInput.value = theme.title;
+  titleInput.addEventListener('input', e => {
+    themes[ti].title = e.target.value;
+    autoSave();
+  });
+  header.appendChild(titleInput);
+
+  // Theme delete
+  const delBtn = document.createElement('button');
+  delBtn.className = 'theme-delete-btn';
+  delBtn.textContent = '×';
+  delBtn.title = '删除整个主题';
+  delBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    card.draggable = false;
+    deleteTheme(ti);
+  });
+  header.appendChild(delBtn);
+
+  card.appendChild(header);
+
+  // ── Sub-module List ──
+  const subList = document.createElement('div');
+  subList.className = 'sub-list';
+  (theme.subModules || []).forEach((sub, si) => {
+    subList.appendChild(createSubCard(theme, sub, ti, si));
+  });
+  card.appendChild(subList);
+
+  // ── Add Sub Button ──
+  const addSubBtn = document.createElement('button');
+  addSubBtn.className = 'add-sub-btn';
+  addSubBtn.textContent = '＋ 添加小标题';
+  addSubBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    addSubModule(ti);
+  });
+  card.appendChild(addSubBtn);
+
+  // ── Theme Footer Stats ──
+  const footer = document.createElement('div');
+  footer.className = 'theme-footer';
+  const tChars = themeTotalChars(theme);
+  const tDur = themeTotalDuration(theme);
+  footer.innerHTML = `<span>📝 ${tChars}字</span><span>⏱ ${tDur}秒</span><span>📑 ${(theme.subModules||[]).length}个小标题</span>`;
+  card.appendChild(footer);
+
+  // ── Drag Events (theme level) ──
+  card.addEventListener('dragstart', handleThemeDragStart);
+  card.addEventListener('dragover', handleThemeDragOver);
+  card.addEventListener('dragleave', handleThemeDragLeave);
+  card.addEventListener('drop', handleThemeDrop);
+  card.addEventListener('dragend', handleThemeDragEnd);
+
+  return card;
+}
+
+function createSubCard(theme, sub, ti, si) {
+  const card = document.createElement('div');
+  card.className = 'sub-card';
+  card.draggable = true;
+  card.dataset.themeIdx = ti;
+  card.dataset.subIdx = si;
+
+  // Sub drag handle
+  const handle = document.createElement('div');
+  handle.className = 'sub-drag-handle';
+  handle.textContent = '⠿';
+  handle.title = '拖拽排序小标题';
+  handle.addEventListener('mousedown', e => { card.draggable = true; });
+  card.appendChild(handle);
+
+  // Sub delete
+  const delBtn = document.createElement('button');
+  delBtn.className = 'sub-delete-btn';
+  delBtn.textContent = '×';
+  delBtn.title = '删除此小标题';
+  delBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    card.draggable = false;
+    deleteSubModule(ti, si);
+  });
+  card.appendChild(delBtn);
+
+  // Subtitle input
+  const subtitle = document.createElement('input');
+  subtitle.type = 'text';
+  subtitle.className = 'sub-subtitle';
+  subtitle.placeholder = '小标题（如：开头钩子·3秒抓人）';
+  subtitle.value = sub.subtitle;
+  subtitle.addEventListener('input', e => {
+    themes[ti].subModules[si].subtitle = e.target.value;
+    autoSave();
+  });
+  card.appendChild(subtitle);
+
+  // Content textarea
+  const textarea = document.createElement('textarea');
+  textarea.className = 'sub-content';
+  textarea.placeholder = '在这里写文案…';
+  textarea.rows = 3;
+  textarea.value = sub.content;
+  textarea.addEventListener('input', e => {
+    themes[ti].subModules[si].content = e.target.value;
+    updateStats();
+    autoSave();
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  });
+  card.appendChild(textarea);
+  requestAnimationFrame(() => {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  });
+
+  // Meta bar
+  const meta = document.createElement('div');
+  meta.className = 'sub-meta';
+  meta.innerHTML = `<span>字数：${countChars(sub.content)}</span><span>预估：${estimateDuration(sub.content)}秒</span>`;
+  card.appendChild(meta);
+
+  // Sub-level drag events
+  card.addEventListener('dragstart', handleSubDragStart);
+  card.addEventListener('dragover', handleSubDragOver);
+  card.addEventListener('dragleave', handleSubDragLeave);
+  card.addEventListener('drop', handleSubDrop);
+  card.addEventListener('dragend', handleSubDragEnd);
+
+  return card;
+}
+
+// ═══════════════════════════════════════
+//  Theme CRUD
+// ═══════════════════════════════════════
+
+function addTheme(title = '', subModules = null) {
+  themes.push({
+    id: generateId(),
+    title: title,
+    subModules: subModules || [{ id: generateId(), subtitle: '', content: '' }]
+  });
+  renderAll();
+  autoSave();
+
+  requestAnimationFrame(() => {
+    const cards = themeList.children;
+    const last = cards[cards.length - 1];
+    if (last) {
+      last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const titleInput = last.querySelector('.theme-title-input');
+      if (titleInput) titleInput.focus();
+    }
+  });
+}
+
+function deleteTheme(ti) {
+  if (themes.length <= 1) {
+    // Don't delete last theme — just reset it
+    themes[0] = {
+      id: generateId(),
+      title: '',
+      subModules: [{ id: generateId(), subtitle: '', content: '' }]
+    };
+    renderAll();
+    autoSave();
+    showToast('已重置最后一个主题');
+    return;
+  }
+  if (confirm('确定删除整个主题及其所有小标题吗？')) {
+    themes.splice(ti, 1);
+    renderAll();
+    autoSave();
+    showToast('主题已删除');
+  }
+}
+
+// ═══════════════════════════════════════
+//  Sub-module CRUD
+// ═══════════════════════════════════════
+
+function addSubModule(ti, subtitle = '', content = '') {
+  themes[ti].subModules.push({
+    id: generateId(),
+    subtitle: subtitle,
+    content: content
+  });
+  renderAll();
+  autoSave();
+
+  // Focus the new sub-module's textarea
+  requestAnimationFrame(() => {
+    const themeCard = themeList.children[ti];
+    if (themeCard) {
+      const subCards = themeCard.querySelectorAll('.sub-card');
+      const lastSub = subCards[subCards.length - 1];
+      if (lastSub) {
+        lastSub.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const ta = lastSub.querySelector('.sub-content');
+        if (ta) ta.focus();
+      }
+    }
+  });
+}
+
+function deleteSubModule(ti, si) {
+  if (themes[ti].subModules.length <= 1) {
+    // Don't remove last sub — just clear it
+    themes[ti].subModules[0] = { id: generateId(), subtitle: '', content: '' };
+    renderAll();
+    autoSave();
+    showToast('已清空最后一个小标题');
+    return;
+  }
+  themes[ti].subModules.splice(si, 1);
+  renderAll();
+  autoSave();
+  showToast('小标题已删除');
+}
+
+function clearAll() {
+  const hasContent = themes.some(t =>
+    t.title.trim() || t.subModules.some(s => s.subtitle.trim() || s.content.trim())
+  );
+  if (!hasContent) {
+    themes = [{ id: generateId(), title: '', subModules: [{ id: generateId(), subtitle: '', content: '' }] }];
+    renderAll();
+    autoSave();
+    return;
+  }
+  if (confirm('确定要清空所有主题和小标题吗？此操作不可撤销。')) {
+    themes = [{ id: generateId(), title: '', subModules: [{ id: generateId(), subtitle: '', content: '' }] }];
+    renderAll();
+    autoSave();
+    showToast('已清空');
+  }
+}
+
+// ═══════════════════════════════════════
+//  Templates
+// ═══════════════════════════════════════
+
+const TEMPLATES = {
+  oral: {
+    label: '口播脚本',
+    themes: [{
+      title: '口播脚本',
+      subModules: [
+        { subtitle: '开头钩子（0-3秒）', content: '' },
+        { subtitle: '核心观点', content: '' },
+        { subtitle: '展开论述', content: '' },
+        { subtitle: '结尾引导（点赞/关注/评论）', content: '' }
+      ]
+    }]
+  },
+  product: {
+    label: '产品种草',
+    themes: [{
+      title: '产品种草',
+      subModules: [
+        { subtitle: '痛点引入', content: '' },
+        { subtitle: '产品亮相', content: '' },
+        { subtitle: '核心卖点+使用效果', content: '' },
+        { subtitle: '价格锚点+购买引导', content: '' }
+      ]
+    }]
+  },
+  story: {
+    label: '故事脚本',
+    themes: [{
+      title: '故事脚本',
+      subModules: [
+        { subtitle: '悬念/冲突开场', content: '' },
+        { subtitle: '情节推进', content: '' },
+        { subtitle: '转折/高潮', content: '' },
+        { subtitle: '结尾金句+互动引导', content: '' }
+      ]
+    }]
+  }
+};
+
+function applyTemplate(type) {
+  const tpl = TEMPLATES[type];
+  if (!tpl) return;
+
+  const hasContent = themes.some(t =>
+    t.title.trim() || t.subModules.some(s => s.subtitle.trim() || s.content.trim())
+  );
+
+  if (hasContent) {
+    if (!confirm(`应用"${tpl.label}"模板将替换当前所有内容，确定继续？`)) return;
+  }
+
+  themes = tpl.themes.map(t => ({
+    id: generateId(),
+    title: t.title,
+    subModules: t.subModules.map(s => ({
+      id: generateId(),
+      subtitle: s.subtitle,
+      content: s.content
+    }))
+  }));
+
+  renderAll();
+  autoSave();
+  showToast(`已应用「${tpl.label}」模板`);
+}
+
+// ═══════════════════════════════════════
+//  Theme-level Drag & Drop
+// ═══════════════════════════════════════
+
+function handleThemeDragStart(e) {
+  dragMeta = { type: 'theme', themeIdx: parseInt(this.dataset.themeIdx) };
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', 'theme');
+}
+
+function handleThemeDragOver(e) {
+  if (!dragMeta || dragMeta.type !== 'theme') return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  this.classList.add('drag-over');
+}
+
+function handleThemeDragLeave(e) {
+  this.classList.remove('drag-over');
+}
+
+function handleThemeDrop(e) {
+  e.preventDefault();
+  this.classList.remove('drag-over');
+  if (!dragMeta || dragMeta.type !== 'theme') return;
+
+  const from = dragMeta.themeIdx;
+  const to = parseInt(this.dataset.themeIdx);
+  if (from === to) return;
+
+  const [moved] = themes.splice(from, 1);
+  themes.splice(to, 0, moved);
+  renderAll();
+  autoSave();
+  showToast('主题排序已更新');
+}
+
+function handleThemeDragEnd(e) {
+  this.classList.remove('dragging');
+  dragMeta = null;
+  document.querySelectorAll('.theme-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+}
+
+// ═══════════════════════════════════════
+//  Sub-level Drag & Drop
+// ═══════════════════════════════════════
+
+function handleSubDragStart(e) {
+  e.stopPropagation();
+  dragMeta = {
+    type: 'sub',
+    themeIdx: parseInt(this.dataset.themeIdx),
+    subIdx: parseInt(this.dataset.subIdx)
+  };
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', 'sub');
+}
+
+function handleSubDragOver(e) {
+  e.stopPropagation();
+  if (!dragMeta || dragMeta.type !== 'sub') return;
+  // Only allow drop within the same theme
+  const ti = parseInt(this.dataset.themeIdx);
+  if (ti !== dragMeta.themeIdx) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  this.classList.add('drag-over');
+}
+
+function handleSubDragLeave(e) {
+  this.classList.remove('drag-over');
+}
+
+function handleSubDrop(e) {
+  e.stopPropagation();
+  this.classList.remove('drag-over');
+  if (!dragMeta || dragMeta.type !== 'sub') return;
+
+  const fromTi = dragMeta.themeIdx;
+  const fromSi = dragMeta.subIdx;
+  const toTi = parseInt(this.dataset.themeIdx);
+  const toSi = parseInt(this.dataset.subIdx);
+
+  if (fromTi !== toTi || fromSi === toSi) return;
+
+  const subs = themes[fromTi].subModules;
+  const [moved] = subs.splice(fromSi, 1);
+  subs.splice(toSi, 0, moved);
+
+  renderAll();
+  autoSave();
+  showToast('小标题排序已更新');
+}
+
+function handleSubDragEnd(e) {
+  this.classList.remove('dragging');
+  dragMeta = null;
+  document.querySelectorAll('.sub-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+}
+
+// ═══════════════════════════════════════
+//  Statistics
+// ═══════════════════════════════════════
+
+function countChars(text) {
+  if (!text) return 0;
+  const chinese = (text.match(/[一-鿿㐀-䶿]/g) || []).length;
+  const english = (text.match(/[a-zA-Z0-9]+/g) || []).length;
+  const punct = (text.match(/[，。！？、；：""''【】《》（）…—,\.!\?;:"'()\[\]{}]/g) || []).length;
+  return chinese + english + punct;
+}
+
+function estimateDuration(text) {
+  const chars = countChars(text);
+  return Math.max(0, Math.round(chars / 3.5));
+}
+
+function themeTotalChars(theme) {
+  return (theme.subModules || []).reduce((sum, s) => sum + countChars(s.content), 0);
+}
+
+function themeTotalDuration(theme) {
+  return (theme.subModules || []).reduce((sum, s) => sum + estimateDuration(s.content), 0);
+}
+
+function updateStats() {
+  let totalChars = 0, totalDuration = 0, totalSubs = 0;
+
+  themes.forEach(t => {
+    totalChars += themeTotalChars(t);
+    totalDuration += themeTotalDuration(t);
+    totalSubs += (t.subModules || []).length;
+  });
+
+  // Update per-theme footer stats
+  const themeCards = themeList.children;
+  for (let ti = 0; ti < themeCards.length; ti++) {
+    const theme = themes[ti];
+    if (!theme) continue;
+    const footer = themeCards[ti].querySelector('.theme-footer');
+    if (footer) {
+      const tChars = themeTotalChars(theme);
+      const tDur = themeTotalDuration(theme);
+      footer.innerHTML = `<span>📝 ${tChars}字</span><span>⏱ ${tDur >= 60 ? Math.floor(tDur/60)+'分'+tDur%60+'秒' : tDur+'秒'}</span><span>📑 ${(theme.subModules||[]).length}个小标题</span>`;
+    }
+    // Update theme index badge
+    const badge = themeCards[ti].querySelector('.theme-index');
+    if (badge) badge.textContent = `主题 ${ti + 1}`;
+
+    // Update per-sub meta
+    const subCards = themeCards[ti].querySelectorAll('.sub-card');
+    for (let si = 0; si < subCards.length; si++) {
+      const sub = (theme.subModules || [])[si];
+      if (!sub) continue;
+      const meta = subCards[si].querySelector('.sub-meta');
+      if (meta) {
+        meta.innerHTML = `<span>字数：${countChars(sub.content)}</span><span>预估：${estimateDuration(sub.content)}秒</span>`;
+      }
+    }
+  }
+
+  document.getElementById('totalChars').textContent = totalChars;
+
+  let durText = totalDuration + '秒';
+  if (totalDuration >= 60) {
+    const min = Math.floor(totalDuration / 60);
+    const sec = totalDuration % 60;
+    durText = min + '分' + sec + '秒';
+  }
+  document.getElementById('totalDuration').textContent = durText;
+  document.getElementById('totalThemes').textContent = themes.length;
+  document.getElementById('totalSubs').textContent = totalSubs;
+}
+
+// ═══════════════════════════════════════
+//  Export
+// ═══════════════════════════════════════
+
+function exportText() {
+  const lines = [];
+  lines.push('═══════════════════════════════════');
+  lines.push('  短视频创作文案');
+  lines.push('  导出时间：' + new Date().toLocaleString('zh-CN'));
+  lines.push('═══════════════════════════════════');
+  lines.push('');
+
+  themes.forEach((theme, ti) => {
+    const themeTitle = theme.title.trim() || `主题 ${ti + 1}`;
+    lines.push(`━━━ ${themeTitle} ━━━`);
+    lines.push('');
+
+    (theme.subModules || []).forEach((sub, si) => {
+      const stitle = sub.subtitle.trim() || `小标题 ${si + 1}`;
+      lines.push(`  ▸ ${stitle}`);
+
+      if (sub.content.trim()) {
+        sub.content.split('\n').forEach(line => {
+          lines.push(`    ${line}`);
+        });
+      } else {
+        lines.push('    （无内容）');
+      }
+
+      const chars = countChars(sub.content);
+      const dur = estimateDuration(sub.content);
+      lines.push(`    ── 字数：${chars}  |  预估：${dur}秒`);
+      lines.push('');
+    });
+  });
+
+  lines.push('═══════════════════════════════════');
+  const totalChars = themes.reduce((sum, t) => sum + themeTotalChars(t), 0);
+  const totalDur = themes.reduce((sum, t) => sum + themeTotalDuration(t), 0);
+  const totalSubs = themes.reduce((sum, t) => sum + (t.subModules || []).length, 0);
+  lines.push(`总计：${totalChars}字  |  预估${totalDur}秒  |  ${themes.length}个主题 / ${totalSubs}个小标题`);
+
+  const text = lines.join('\n');
+
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✅ 已复制到剪贴板');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ 已复制到剪贴板');
+  });
+}
+
+// ═══════════════════════════════════════
+//  Toast
+// ═══════════════════════════════════════
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ═══════════════════════════════════════
+//  Keyboard Shortcuts
+// ═══════════════════════════════════════
+
+document.addEventListener('keydown', e => {
+  // Ctrl+Enter → add sub-module to active theme
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    const active = document.activeElement;
+    if (active) {
+      const subCard = active.closest('.sub-card');
+      const themeCard = active.closest('.theme-card');
+      if (subCard && themeCard) {
+        const ti = parseInt(themeCard.dataset.themeIdx);
+        if (!isNaN(ti)) { addSubModule(ti); return; }
+      }
+      if (themeCard) {
+        const ti = parseInt(themeCard.dataset.themeIdx);
+        if (!isNaN(ti)) { addSubModule(ti); return; }
+      }
+    }
+    // Fallback: add to first theme
+    if (themes.length > 0) addSubModule(0);
+  }
+
+  // Ctrl+Shift+N → add new theme
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'N') {
+    e.preventDefault();
+    addTheme();
+  }
+
+  // Ctrl+Shift+C → export
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+    e.preventDefault();
+    exportText();
+  }
+});
+
+// ═══════════════════════════════════════
+//  Init
+// ═══════════════════════════════════════
+
+loadState();
+renderAll();
+
+// Show hint on first visit
+const hasVisited = localStorage.getItem('short-video-script-visited-v2');
+if (!hasVisited) {
+  localStorage.setItem('short-video-script-visited-v2', '1');
+  setTimeout(() => {
+    showToast('💡 Ctrl+Enter 添加小标题 | Ctrl+Shift+N 添加主题 | 拖拽 ⠿ 排序');
+  }, 600);
+}
+</script>
+</body>
+</html>
